@@ -1,0 +1,98 @@
+NAME
+    Mojolicious::Plugin::NamespaceForm - Support foo.0.bar params
+
+DESCRIPTION
+    This plugin makes it easier to work with multiple form on a webpages.
+    The problem is that validation and automatic form filling is done based
+    on the name of the form field. This plugin provides a mechanism for
+    making unique namespaces for groups of form fields.
+
+SYNOPSIS
+  Single object
+    Application/controller logic:
+
+      use Mojolicious::Lite;
+      plugin 'Mojolicious::Plugin::NamespaceForm';
+
+      post '/user' => sub {
+        my $self = shift;
+        my $user = $self->namespace_params('user')->single;
+
+        # $user = { email => '...', name => '...', _index => 42 }
+      };
+
+    Template:
+
+      % stash field_namespace => 'user';
+      % stash field_index => 42; # optional
+      %= text_field 'email';
+      %= text_field 'name';
+
+    Output:
+
+      <input name="user.42.email">
+      <input name="user.42.name">
+
+  Multiple objects
+      post '/users' => sub {
+        my $self = shift;
+        my @users = @{ $self->namespace_params('user') };
+
+        # @users = (
+        #   { email => '...', name => '...', _index => 0 },
+        #   { email => '...', name => '...', _index => 1 },
+        # );
+
+        for my $user (@users) {
+          # ...
+        }
+      };
+
+    Template:
+
+      % stash field_namespace => 'user';
+      % stash field_index => 0;
+      % for my $user (@$users) {
+        %= text_field 'email';
+        %= text_field 'name';
+        % stash->{field_index}++;
+      % }
+
+    Output:
+
+      <input name="user.0.email">
+      <input name="user.0.name">
+      <input name="user.1.email">
+      <input name="user.1.name">
+      ...
+
+HELPERS
+  namespace_params
+      @list_of_hashes = @{ $self->namespace_params($namespace) };
+      $namespace_object = $self->namespace_params($namespace);
+
+    Scalar context is useful when only posting one object from the form,
+    like the example in the "Single object".
+
+    List context on the other hand is useful when posting many object of the
+    same type.
+
+METHODS
+  register
+    Will register "HELPERS" and override tag helpers.
+
+NAMESPACE METHODS
+  get
+      $hash_ref = $self->get($index);
+
+    Return a given hash ref by index, or undef if no such index is defined.
+
+  single
+      $hash_ref = $self->single;
+
+    This method will die if no data exists for form namespace or if there
+    are more than one item. The index does not matter.
+
+AUTHOR
+    Jan Henning Thorsen - "jhthorsen@cpan.org"
+
