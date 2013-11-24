@@ -1,11 +1,45 @@
 NAME
     Mojolicious::Plugin::NamespaceForm - Support foo.0.bar params
 
+VERSION
+    0.01
+
 DESCRIPTION
-    This plugin makes it easier to work with multiple form on a webpages.
-    The problem is that validation and automatic form filling is done based
-    on the name of the form field. This plugin provides a mechanism for
-    making unique namespaces for groups of form fields.
+    This plugin makes it easier to work with multiple forms on a webpages.
+
+    This plugins solves the problem related to validation and automatic form
+    filling. That logic is based on the name of the form field, meaning you
+    need to provide unique names for each form of the same type, unless you
+    want confusing error messages displayed to the user.
+
+  Example
+    The forms below is supposed to illustrate the problem:
+
+      <form>
+        <h2>New product</h2>
+        Product name: <input name="product_name">
+        <button>Add</button>
+        <h2>Existing product</h2>
+        Product name: <input name="product_name">
+        <button name="id" value="42">Update</button>
+      </form>
+
+  How does it work?
+    This plugin works by wrapping around most of the built in form helpers
+    with extra logic for generating the name of the input field. The helpers
+    below is overridden by default, but the list will probably get longer in
+    the future.
+
+      check_box
+      hidden_field
+      label_for
+      number_field
+      password_field
+      radio_button
+      select_field
+      text_area
+      text_field
+      url_field
 
 SYNOPSIS
   Single object
@@ -68,20 +102,23 @@ SYNOPSIS
 
 HELPERS
   namespace_params
-      @list_of_hashes = @{ $self->namespace_params($namespace) };
-      $namespace_object = $self->namespace_params($namespace);
+      $obj = $self->namespace_params($namespace);
+      @list_of_hashes = @$obj;
+      $hash_ref = $obj->single; # might die
+      $hash_ref = $obj->get($index); # might return undef
 
-    Scalar context is useful when only posting one object from the form,
-    like the example in the "Single object".
+    The $obj is overloaded in list context: It will return a list of
+    hash-refs ordered by "_index".
 
-    List context on the other hand is useful when posting many object of the
-    same type.
+    See "NAMESPACE OBJECT METHODS" for more details.
 
 METHODS
   register
+      $self->register(helpers => [qw( input_tag )]);
+
     Will register "HELPERS" and override tag helpers.
 
-NAMESPACE METHODS
+NAMESPACE OBJECT METHODS
   get
       $hash_ref = $self->get($index);
 
